@@ -262,7 +262,13 @@ export const AetherCanvas: React.FC<AetherCanvasProps> = ({
       const particles = particlesRef.current
 
       // Projection and coordinate update
-      const projectedParticles = []
+      const projectedParticles: Array<{
+        x: number
+        y: number
+        z: number
+        size: number
+        opacity: number
+      }> = []
 
       // Mouse attraction targets (in 3D space after rotation)
       // Map mouse from 2D screen space to estimated 3D attraction center
@@ -292,12 +298,13 @@ export const AetherCanvas: React.FC<AetherCanvasProps> = ({
 
         // 5. Mouse Interaction: Swirl/Attraction when cursor is hovering
         if (mouseRef.current.isHovering) {
-          // Calculate distance in 3D rotated space
+          // Calculate distance squared first to avoid unnecessary square roots
           const dx = mouse3D.x - rotated.x
           const dy = mouse3D.y - rotated.y
-          const dist2D = Math.sqrt(dx * dx + dy * dy)
+          const distSq = dx * dx + dy * dy
           
-          if (dist2D < 120) {
+          if (distSq < 14400) { // 120^2
+            const dist2D = Math.sqrt(distSq)
             // Stronger pull if closer
             const pull = (1.0 - dist2D / 120) * 0.25
             
@@ -325,7 +332,6 @@ export const AetherCanvas: React.FC<AetherCanvasProps> = ({
             y: y2d,
             z: rotated.z,
             size: p.size,
-            color: p.color,
             opacity: p.opacity * Math.min(1.0, scale),
           })
         }
@@ -333,6 +339,12 @@ export const AetherCanvas: React.FC<AetherCanvasProps> = ({
 
       // 7. Depth Sort: Sort particles by z (back-to-front)
       projectedParticles.sort((a, b) => b.z - a.z)
+
+      // Convert hex current color to rgb once per frame to save 12,000+ operations/sec
+      const currentHex = currentColorRef.current
+      const r = parseInt(currentHex.substring(1, 3), 16)
+      const g = parseInt(currentHex.substring(3, 5), 16)
+      const b = parseInt(currentHex.substring(5, 7), 16)
 
       // 8. Render Particles
       for (let i = 0; i < projectedParticles.length; i++) {
@@ -346,11 +358,6 @@ export const AetherCanvas: React.FC<AetherCanvasProps> = ({
         // Draw soft glow particle
         ctx.beginPath()
         ctx.arc(p.x, p.y, Math.max(0.2, p.size), 0, Math.PI * 2)
-        
-        // Convert hex current color to rgba
-        const r = parseInt(currentColorRef.current.substring(1, 3), 16)
-        const g = parseInt(currentColorRef.current.substring(3, 5), 16)
-        const b = parseInt(currentColorRef.current.substring(5, 7), 16)
         
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${p.opacity})`
         ctx.fill()

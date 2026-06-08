@@ -22,6 +22,7 @@ const navItems: NavItem[] = [
 export const NavDots: React.FC = () => {
   const pathname = usePathname()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [focusedId, setFocusedId] = useState<string | null>(null)
 
   return (
     <nav 
@@ -31,19 +32,23 @@ export const NavDots: React.FC = () => {
       {navItems.map((item) => {
         const isActive = pathname === item.path
         const isHovered = hoveredId === item.id
+        const isFocused = focusedId === item.id
+        const isVisible = isHovered || isActive || isFocused
 
         return (
           <Link
             key={item.id}
             href={item.path}
-            className="flex items-center gap-3 group focus:outline-none"
+            className="flex items-center gap-3 group focus:outline-none focus-visible-ring rounded-sm"
             onMouseEnter={() => setHoveredId(item.id)}
             onMouseLeave={() => setHoveredId(null)}
+            onFocus={() => setFocusedId(item.id)}
+            onBlur={() => setFocusedId(null)}
             aria-label={`Navigate to ${item.label}`}
           >
-            {/* Label - visible on hover or if active */}
+            {/* Label - visible on hover, focus or if active */}
             <AnimatePresence>
-              {(isHovered || isActive) && (
+              {isVisible && (
                 <motion.span
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
