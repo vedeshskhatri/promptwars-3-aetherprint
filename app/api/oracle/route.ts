@@ -27,6 +27,14 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
 export async function POST(req: NextRequest) {
   try {
+    // Validate that actual Gemini API key is configured at runtime
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'MOCK_GEMINI_API_KEY_FOR_BUILD') {
+      return NextResponse.json(
+        { error: 'Atmospheric interference. Gemini API key is not configured.' },
+        { status: 500 }
+      )
+    }
+
     // 1. Validate Content-Type
     const contentType = req.headers.get('content-type') || ''
     if (!contentType.includes('application/json')) {
