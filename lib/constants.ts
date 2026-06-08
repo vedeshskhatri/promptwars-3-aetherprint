@@ -1,3 +1,9 @@
+/**
+ * IPCC-sourced and peer-reviewed emission factors used across all carbon calculations.
+ * Covers transit (car, public transport, motorbike), energy (electricity, cooking fuels),
+ * sustenance (diet types, food waste, food source), consumption, and flights.
+ * All values are in kgCO2e per unit unless otherwise noted.
+ */
 export const EMISSION_FACTORS = {
   // Transit (kgCO2e per km or unit)
   transit: {
@@ -63,12 +69,20 @@ export const EMISSION_FACTORS = {
   },
 }
 
+/**
+ * Global and regional carbon emission baselines for comparison (tCO2e/year).
+ * Used to contextualize individual carbon footprints against real-world targets.
+ */
 export const BASELINES = {
   indiaAverage: 1.9,
   globalAverage: 4.7,
   parisTarget: 2.0,
 }
 
+/**
+ * Color palette for nebula visualization, mapped to emission severity levels.
+ * nebulaLow (teal) → nebulaMid (amber) → nebulaHigh (crimson) as emissions increase.
+ */
 export const COLORS = {
   nebulaLow: '#00FFCC',  // clean teal
   nebulaMid: '#FF8C00',  // amber
@@ -77,10 +91,13 @@ export const COLORS = {
   hudGlass: 'rgba(255, 255, 255, 0.04)',
   hudBorder: 'rgba(255, 255, 255, 0.08)',
   textPrimary: '#F0EDE8',
-  textDim: 'rgba(240, 237, 232, 0.45)',
+  textDim: 'rgba(240, 237, 232, 0.62)',
 }
 
-// Neutral / Default State values when there is no carbonData
+/**
+ * Default neutral-state carbon breakdown used for landing page visualization.
+ * Represents the global average (4.7 tCO2e/year) distributed across all categories.
+ */
 export const DEFAULT_CARBON_DATA = {
   transport: 0.8,
   energy: 1.2,

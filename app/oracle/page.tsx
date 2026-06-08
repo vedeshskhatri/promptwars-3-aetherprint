@@ -30,10 +30,9 @@ export default function OraclePage() {
       }
     }
 
-    setTimeout(() => {
-      setBreakdown(activeBreakdown)
-      setAccentColor(getNebulaColor(activeBreakdown.total))
-    }, 0)
+    // Set state directly without setTimeout — useEffect already runs after paint
+    setBreakdown(activeBreakdown)
+    setAccentColor(getNebulaColor(activeBreakdown.total))
   }, [])
 
   if (!breakdown) {
@@ -49,13 +48,15 @@ export default function OraclePage() {
       className="relative w-full h-full bg-black flex flex-col md:flex-row overflow-hidden"
       style={{ '--accent': accentColor } as React.CSSProperties}
     >
+      {/* Visually hidden h1 for screen reader heading hierarchy */}
+      <h1 className="sr-only">AETHERPRINT Atmospherist Oracle</h1>
       {/* Back button */}
       <Link
         href="/print"
         className="absolute top-8 left-8 z-20 flex items-center gap-2 font-mono text-[9px] tracking-widest text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors duration-300 focus-visible-ring"
         aria-label="Return to your print results"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
+        <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
         RETURN TO RECORD
       </Link>
 

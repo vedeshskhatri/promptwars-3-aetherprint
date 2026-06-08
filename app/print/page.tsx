@@ -11,7 +11,6 @@ import { CountUp } from '../../components/ui/CountUp'
 import { CarbonBreakdown, EmissionInputs } from '../../types'
 import { generateAetherID, getNebulaColor } from '../../lib/carbon-calculator'
 import { DEFAULT_CARBON_DATA } from '../../lib/constants'
-import confetti from 'canvas-confetti'
 
 export default function PrintPage() {
   const [breakdown, setBreakdown] = useState<CarbonBreakdown | null>(null)
@@ -31,13 +30,15 @@ export default function PrintPage() {
       activeBreakdown = JSON.parse(storedBreakdown) as CarbonBreakdown
       activeAetherID = generateAetherID(parsedInputs)
 
-      // Trigger achievement confetti if carbon emissions are low (<2.0t Paris target)
+      // Dynamically import confetti only when user has low emissions (Paris-aligned)
       if (activeBreakdown.total < 2.0) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#00FFCC', '#00E5FF', '#2979FF'],
+        import('canvas-confetti').then(({ default: confetti }) => {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#00FFCC', '#00E5FF', '#2979FF'],
+          })
         })
       }
     } else {
@@ -52,11 +53,10 @@ export default function PrintPage() {
       }
     }
 
-    setTimeout(() => {
-      setBreakdown(activeBreakdown)
-      setAetherID(activeAetherID)
-      setAccentColor(getNebulaColor(activeBreakdown.total))
-    }, 0)
+    // Set state directly without setTimeout — useEffect already runs after paint
+    setBreakdown(activeBreakdown)
+    setAetherID(activeAetherID)
+    setAccentColor(getNebulaColor(activeBreakdown.total))
   }, [])
 
   if (!breakdown) {
@@ -100,7 +100,7 @@ export default function PrintPage() {
         {/* Floating eco-shield badge for low emitters */}
         {breakdown.total < 2.0 && (
           <div className="absolute top-8 left-8 z-10 font-mono text-[9px] text-[var(--accent)] border border-[var(--accent)] px-3 py-1.5 rounded-sm bg-black/60 backdrop-blur-sm flex items-center gap-2 tracking-widest">
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+            <Sparkles className="w-3.5 h-3.5 animate-pulse" aria-hidden="true" />
             PARIS ALIGNED
           </div>
         )}
@@ -153,7 +153,7 @@ export default function PrintPage() {
               }}
               aria-label="Consult the Atmospherist AI Coach"
             >
-              <Terminal className="w-3.5 h-3.5" />
+              <Terminal className="w-3.5 h-3.5" aria-hidden="true" />
               CONSULT THE ATMOSPHERIST →
             </Link>
 

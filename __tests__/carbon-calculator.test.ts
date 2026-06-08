@@ -228,4 +228,110 @@ describe('Carbon Calculation Engine tests', () => {
     expect(equivalents[0].value).toBe(4) // 1.4 / 0.35 = 4 flights
     expect(equivalents[1].value).toBe(23) // 1.4 * 1000 / 60 = 23.33 -> 23 kg beef
   })
+
+  // 14. Electric car — significantly lower emissions than petrol
+  test('electric car emits far less than petrol at same km', () => {
+    const electricInputs = createMockInputs({
+      transport: { carKmPerWeek: 200, carFuelType: 'electric', publicTransitHoursPerWeek: 0, motorbikeKmPerWeek: 0 },
+    })
+    const petrolInputs = createMockInputs({
+      transport: { carKmPerWeek: 200, carFuelType: 'petrol', publicTransitHoursPerWeek: 0, motorbikeKmPerWeek: 0 },
+    })
+    const electricBreakdown = calculateCarbonBreakdown(electricInputs)
+    const petrolBreakdown = calculateCarbonBreakdown(petrolInputs)
+    // Electric should be far lower than petrol
+    expect(electricBreakdown.transport).toBeLessThan(petrolBreakdown.transport)
+    // Electric: 200 * 0.05 * 52 / 1000 = 0.52 tCO2
+    expect(electricBreakdown.transport).toBe(0.52)
+  })
+
+  // 15. All diet types produce valid results in correct ascending order
+  test('all diet types produce positive carbon values in correct order', () => {
+    const dietTypes = ['vegan', 'vegetarian', 'flexitarian', 'omnivore', 'meat-heavy'] as const
+    const values = dietTypes.map((dietType) => {
+      const inputs = createMockInputs({ diet: { dietType, foodWasteLevel: 'none', foodSourcePreference: 'local' } })
+      return calculateCarbonBreakdown(inputs).diet
+    })
+    // Each diet type should be greater than or equal to previous (ascending order)
+    for (let i = 1; i < values.length; i++) {
+      expect(values[i]).toBeGreaterThanOrEqual(values[i - 1])
+    }
+    // Meat-heavy should be highest, vegan lowest
+    expect(values[values.length - 1]).toBeGreaterThan(values[0])
+  })
+
+  // 16. LPG cooking fuel emissions
+  test('LPG cooking fuel produces correct emissions', () => {
+    const inputs = createMockInputs({
+      energy: { monthlyElectricityKwh: 0, renewableOffsetPercent: 0, cookingFuel: 'lpg' },
+    })
+    const breakdown = calculateCarbonBreakdown(inputs)
+    // LPG factor: 0.432 tCO2/year -> rounds to 0.43
+    expect(breakdown.energy).toBe(0.43)
+  })
+
+  // 17. Economy vs business vs first class — ascending multipliers
+  test('flight class multipliers: economy < business < first', () => {
+    const flightBase = { shortHaulFlightsPerYear: 4, longHaulFlightsPerYear: 2 }
+    const economy = calculateCarbonBreakdown(createMockInputs({ flights: { ...flightBase, flightClass: 'economy' } })).flights
+    const business = calculateCarbonBreakdown(createMockInputs({ flights: { ...flightBase, flightClass: 'business' } })).flights
+    const first = calculateCarbonBreakdown(createMockInputs({ flights: { ...flightBase, flightClass: 'first' } })).flights
+    expect(economy).toBeLessThan(business)
+    expect(business).toBeLessThan(first)
+  })
+
+  // 18. Food waste levels — ascending impact
+  test('food waste levels: none <= low <= medium <= high', () => {
+    const dietBase = { dietType: 'omnivore' as const, foodSourcePreference: 'local' as const }
+    const none = calculateCarbonBreakdown(createMockInputs({ diet: { ...dietBase, foodWasteLevel: 'none' } })).diet
+    const low = calculateCarbonBreakdown(createMockInputs({ diet: { ...dietBase, foodWasteLevel: 'low' } })).diet
+    const medium = calculateCarbonBreakdown(createMockInputs({ diet: { ...dietBase, foodWasteLevel: 'medium' } })).diet
+    const high = calculateCarbonBreakdown(createMockInputs({ diet: { ...dietBase, foodWasteLevel: 'high' } })).diet
+    expect(none).toBeLessThanOrEqual(low)
+    expect(low).toBeLessThanOrEqual(medium)
+    expect(medium).toBeLessThanOrEqual(high)
+  })
+
+  // 19. getCarbonEquivalents at zero
+  test('getCarbonEquivalents with zero total returns zeroed values', () => {
+    const equivalents = getCarbonEquivalents(0)
+    expect(equivalents.length).toBe(3)
+    equivalents.forEach((eq) => {
+      expect(eq.value).toBe(0)
+    })
+  })
+
+  // 20. getCarbonStatus at exact boundary (0 total)
+  test('getCarbonStatus returns low for zero emissions', () => {
+    expect(getCarbonStatus(0)).toBe('low')
+  })
+
+  // 21. Consumption categories — clothing and electronics produce emissions
+  test('clothing and electronics produce positive consumption emissions', () => {
+    const inputs = createMockInputs({
+      consumption: {
+        monthlyClothingSpendInr: 5000,
+        electronicsPurchasedPerYear: 2,
+        onlineDeliveriesPerWeek: 5,
+      },
+    })
+    const breakdown = calculateCarbonBreakdown(inputs)
+    expect(breakdown.consumption).toBeGreaterThan(0)
+  })
+
+  // 22. total equals sum of all categories
+  test('breakdown.total exactly equals sum of all category emissions', () => {
+    const inputs = createMockInputs({
+      transport: { carKmPerWeek: 100, carFuelType: 'petrol', publicTransitHoursPerWeek: 2, motorbikeKmPerWeek: 50 },
+      energy: { monthlyElectricityKwh: 150, renewableOffsetPercent: 20, cookingFuel: 'lpg' },
+      diet: { dietType: 'flexitarian', foodWasteLevel: 'low', foodSourcePreference: 'mixed' },
+      consumption: { monthlyClothingSpendInr: 2000, electronicsPurchasedPerYear: 1, onlineDeliveriesPerWeek: 3 },
+      flights: { shortHaulFlightsPerYear: 2, longHaulFlightsPerYear: 1, flightClass: 'business' },
+    })
+    const breakdown = calculateCarbonBreakdown(inputs)
+    const calculatedTotal = Number(
+      (breakdown.transport + breakdown.energy + breakdown.diet + breakdown.consumption + breakdown.flights).toFixed(2)
+    )
+    expect(breakdown.total).toBe(calculatedTotal)
+  })
 })

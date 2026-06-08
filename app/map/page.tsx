@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { AetherCanvas } from '../../components/nebula/AetherCanvas'
@@ -49,44 +49,44 @@ export default function MapPage() {
   const [activeStep, setActiveStep] = useState(0)
   const [isRevealing, setIsRevealing] = useState(false)
 
-  // Derived state calculated during render
-  const breakdown = calculateCarbonBreakdown(inputs)
-  const accentColor = getNebulaColor(breakdown.total)
+  // Memoized derived state — only recalculates when inputs change
+  const breakdown = useMemo(() => calculateCarbonBreakdown(inputs), [inputs])
+  const accentColor = useMemo(() => getNebulaColor(breakdown.total), [breakdown.total])
 
-  const updateTransport = (data: Partial<EmissionInputs['transport']>) => {
+  const updateTransport = useCallback((data: Partial<EmissionInputs['transport']>) => {
     setInputs((prev) => ({
       ...prev,
       transport: { ...prev.transport, ...data },
     }))
-  }
+  }, [])
 
-  const updateEnergy = (data: Partial<EmissionInputs['energy']>) => {
+  const updateEnergy = useCallback((data: Partial<EmissionInputs['energy']>) => {
     setInputs((prev) => ({
       ...prev,
       energy: { ...prev.energy, ...data },
     }))
-  }
+  }, [])
 
-  const updateDiet = (data: Partial<EmissionInputs['diet']>) => {
+  const updateDiet = useCallback((data: Partial<EmissionInputs['diet']>) => {
     setInputs((prev) => ({
       ...prev,
       diet: { ...prev.diet, ...data },
     }))
-  }
+  }, [])
 
-  const updateConsumption = (data: Partial<EmissionInputs['consumption']>) => {
+  const updateConsumption = useCallback((data: Partial<EmissionInputs['consumption']>) => {
     setInputs((prev) => ({
       ...prev,
       consumption: { ...prev.consumption, ...data },
     }))
-  }
+  }, [])
 
-  const updateFlights = (data: Partial<EmissionInputs['flights']>) => {
+  const updateFlights = useCallback((data: Partial<EmissionInputs['flights']>) => {
     setInputs((prev) => ({
       ...prev,
       flights: { ...prev.flights, ...data },
     }))
-  }
+  }, [])
 
 
 
@@ -108,6 +108,8 @@ export default function MapPage() {
       className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden"
       style={{ '--accent': accentColor } as React.CSSProperties}
     >
+      {/* Visually hidden h1 for screen reader heading hierarchy */}
+      <h1 className="sr-only">AETHERPRINT Atmospheric Calibrator</h1>
       {/* Background Nebula */}
       <div className="absolute inset-0 z-0">
         <AetherCanvas 

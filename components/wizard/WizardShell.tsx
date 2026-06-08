@@ -78,6 +78,7 @@ export const WizardShell: React.FC<WizardShellProps> = ({
               }}
               className="relative w-5 h-5 flex items-center justify-center rounded-full focus-visible-ring"
               aria-label={`Go to step ${index + 1}`}
+              aria-current={isActive ? 'step' : undefined}
             >
               {isActive && (
                 <motion.div

@@ -8,7 +8,8 @@
   --hud-glass: rgba(255, 255, 255, 0.04);
   --hud-border: rgba(255, 255, 255, 0.08);
   --text-primary: #F0EDE8;
-  --text-dim: rgba(240, 237, 232, 0.45);
+  /* Increased from 0.45 to 0.62 for WCAG AA contrast compliance (~5:1 ratio on black) */
+  --text-dim: rgba(240, 237, 232, 0.62);
   --accent: var(--nebula-low);
 }
 
@@ -82,4 +83,16 @@ html, body {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* Accessibility: Respect user's reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

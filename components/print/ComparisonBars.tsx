@@ -41,7 +41,11 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   return null
 }
 
-export const ComparisonBars: React.FC<ComparisonBarsProps> = ({ total, accentColor }) => {
+/**
+ * Horizontal bar chart comparing user's carbon footprint against global baselines.
+ * Wrapped with React.memo since total and accentColor are stable after page load.
+ */
+export const ComparisonBars: React.FC<ComparisonBarsProps> = React.memo(({ total, accentColor }) => {
   const data = [
     {
       name: 'YOUR SIGNATURE',
@@ -66,7 +70,7 @@ export const ComparisonBars: React.FC<ComparisonBarsProps> = ({ total, accentCol
   ]
 
   return (
-    <div className="w-full h-44 select-none font-mono" aria-label="Carbon comparison chart">
+    <figure className="w-full h-44 select-none font-mono" aria-label="Carbon footprint comparison chart">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
@@ -96,7 +100,8 @@ export const ComparisonBars: React.FC<ComparisonBarsProps> = ({ total, accentCol
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </figure>
   )
-}
+})
+ComparisonBars.displayName = 'ComparisonBars'
 export default ComparisonBars

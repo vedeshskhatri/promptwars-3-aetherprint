@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { AetherCanvas } from '../nebula/AetherCanvas'
@@ -85,18 +85,20 @@ export const MorphingLab: React.FC = () => {
       inputsBlock = getMockInputsFromBreakdown(breakdownBlock)
     }
 
-    setTimeout(() => {
-      setOriginalInputs(inputsBlock)
-      setOriginalBreakdown(breakdownBlock)
-    }, 0)
+    // Set state directly without setTimeout — useEffect already runs after paint
+    setOriginalInputs(inputsBlock)
+    setOriginalBreakdown(breakdownBlock)
   }, [])
 
-  // Derive projected state during rendering to avoid synchronous setState inside useEffect
-  let projectedBreakdown: CarbonBreakdown | null = null
-  let projectedColor = '#00FFCC'
+  // Memoize the entire projected computation to avoid recalculating on unrelated renders.
+  // Uses structuredClone (faster than JSON.parse/stringify) for the deep clone.
+  const { projectedBreakdown, projectedColor } = useMemo(() => {
+    if (!originalInputs || !originalBreakdown) {
+      return { projectedBreakdown: null, projectedColor: '#00FFCC' }
+    }
 
-  if (originalInputs && originalBreakdown) {
-    const projectedInputs: EmissionInputs = JSON.parse(JSON.stringify(originalInputs))
+    // Use structuredClone for a fast native deep clone
+    const projectedInputs: EmissionInputs = structuredClone(originalInputs)
 
     if (modifiers.switchToEv && projectedInputs.transport.carFuelType !== 'none') {
       projectedInputs.transport.carFuelType = 'electric'
@@ -137,9 +139,9 @@ export const MorphingLab: React.FC = () => {
       )
     )
 
-    projectedBreakdown = calculateCarbonBreakdown(projectedInputs)
-    projectedColor = getNebulaColor(projectedBreakdown.total)
-  }
+    const bd = calculateCarbonBreakdown(projectedInputs)
+    return { projectedBreakdown: bd, projectedColor: getNebulaColor(bd.total) }
+  }, [originalInputs, originalBreakdown, modifiers])
 
   if (!originalInputs || !originalBreakdown || !projectedBreakdown) {
     return (

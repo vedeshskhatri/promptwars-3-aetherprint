@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plane, Beef, Trees } from 'lucide-react'
 import { getCarbonEquivalents } from '../../lib/carbon-calculator'
@@ -9,9 +9,15 @@ interface CarbonEquivalentsProps {
   total: number
 }
 
-export const CarbonEquivalents: React.FC<CarbonEquivalentsProps> = ({ total }) => {
+/**
+ * Rotating carousel of carbon equivalent comparisons (flights, beef, trees).
+ * Uses useMemo for the equivalents calculation and aria-live for screen reader announcements.
+ * Wrapped with React.memo since total rarely changes.
+ */
+export const CarbonEquivalents: React.FC<CarbonEquivalentsProps> = React.memo(({ total }) => {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const equivalents = getCarbonEquivalents(total)
+  // Memoize — only recalculates when total changes
+  const equivalents = useMemo(() => getCarbonEquivalents(total), [total])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,8 +30,8 @@ export const CarbonEquivalents: React.FC<CarbonEquivalentsProps> = ({ total }) =
   const current = equivalents[currentIndex]
 
   // Map icon strings to components
-  const renderIcon = (iconName: string) => {
-    const props = { className: 'w-6 h-6 text-[var(--accent)]' }
+  const renderIcon = (iconName: string): React.ReactNode => {
+    const props = { className: 'w-6 h-6 text-[var(--accent)]', 'aria-hidden': true as const }
     if (iconName === 'Plane') return <Plane {...props} />
     if (iconName === 'Beef') return <Beef {...props} />
     if (iconName === 'Trees') return <Trees {...props} />
@@ -33,9 +39,12 @@ export const CarbonEquivalents: React.FC<CarbonEquivalentsProps> = ({ total }) =
   }
 
   return (
-    <div className="w-full relative min-h-[110px] border border-[var(--hud-border)] rounded bg-[rgba(255,255,255,0.02)] p-4 flex flex-col justify-between overflow-hidden select-none font-mono">
-      {/* Top indicator dots */}
-      <div className="flex justify-end gap-1 mb-2">
+    <section
+      className="w-full relative min-h-[110px] border border-[var(--hud-border)] rounded bg-[rgba(255,255,255,0.02)] p-4 flex flex-col justify-between overflow-hidden select-none font-mono"
+      aria-label="Carbon emission equivalents"
+    >
+      {/* Top indicator dots — decorative only */}
+      <div className="flex justify-end gap-1 mb-2" aria-hidden="true">
         {equivalents.map((_, idx) => (
           <div
             key={idx}
@@ -46,6 +55,11 @@ export const CarbonEquivalents: React.FC<CarbonEquivalentsProps> = ({ total }) =
         ))}
       </div>
 
+      {/* Screen reader live region to announce rotating equivalents */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {current.value.toLocaleString()} {current.unit} — {current.label}
+      </div>
+
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
@@ -54,6 +68,7 @@ export const CarbonEquivalents: React.FC<CarbonEquivalentsProps> = ({ total }) =
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.35 }}
           className="flex items-center gap-4 flex-grow"
+          aria-hidden="true"
         >
           {/* Circular icon container with accent border */}
           <div className="flex items-center justify-center p-3.5 rounded-full border border-[var(--hud-border)] bg-black/40">
@@ -75,7 +90,8 @@ export const CarbonEquivalents: React.FC<CarbonEquivalentsProps> = ({ total }) =
           </div>
         </motion.div>
       </AnimatePresence>
-    </div>
+    </section>
   )
-}
+})
+CarbonEquivalents.displayName = 'CarbonEquivalents'
 export default CarbonEquivalents

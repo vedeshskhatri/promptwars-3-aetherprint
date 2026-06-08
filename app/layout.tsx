@@ -4,6 +4,7 @@ import './globals.css'
 import { GrainOverlay } from '../components/ui/GrainOverlay'
 import { NebulaCursor } from '../components/ui/NebulaCursor'
 import { NavDots } from '../components/ui/NavDots'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -60,7 +61,7 @@ export default function RootLayout({
       lang="en"
       className={`${cormorant.variable} ${dmMono.variable} ${syne.variable} h-full w-full`}
     >
-      <body className="font-sans antialiased bg-black text-[#F0EDE8] w-full h-full overflow-hidden select-none relative">
+      <body className="font-sans antialiased bg-black text-[#F0EDE8] w-full h-full overflow-hidden relative">
         {/* Skip to main content link for screen readers */}
         <a
           href="#main-content"
@@ -75,7 +76,9 @@ export default function RootLayout({
         <NavDots />
 
         <main id="main-content" className="w-full h-full relative" tabIndex={-1}>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </body>
     </html>

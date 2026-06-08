@@ -8,7 +8,7 @@ interface AtmosphericReadingsProps {
 }
 
 // Custom category thresholds for glyph status: ◆ green (< avg) | ◆ amber (at avg) | ◆ red (> avg)
-const getCategoryStatus = (category: keyof Omit<CarbonBreakdown, 'total'>, value: number) => {
+const getCategoryStatus = (category: keyof Omit<CarbonBreakdown, 'total'>, value: number): { label: string; color: string } => {
   const thresholds: Record<typeof category, { low: number; high: number }> = {
     transport: { low: 0.6, high: 1.2 },
     energy: { low: 0.8, high: 1.8 },
@@ -23,13 +23,17 @@ const getCategoryStatus = (category: keyof Omit<CarbonBreakdown, 'total'>, value
   return { label: 'ABOVE AVERAGE', color: 'var(--nebula-high, #FF2244)' }
 }
 
-const formatCategoryName = (name: string) => {
+const formatCategoryName = (name: string): string => {
   if (name === 'diet') return 'SUSTENANCE LAYER'
   if (name === 'consumption') return 'CONSUMPTION LAYER'
   return `${name.toUpperCase()} LAYER`
 }
 
-export const AtmosphericReadings: React.FC<AtmosphericReadingsProps> = ({ breakdown }) => {
+/**
+ * Displays per-category atmospheric emission readings with status indicators.
+ * Wrapped with React.memo since breakdown data is stable after page load.
+ */
+export const AtmosphericReadings: React.FC<AtmosphericReadingsProps> = React.memo(({ breakdown }) => {
   const categories: Array<keyof Omit<CarbonBreakdown, 'total'>> = [
     'transport',
     'energy',
@@ -39,7 +43,7 @@ export const AtmosphericReadings: React.FC<AtmosphericReadingsProps> = ({ breakd
   ]
 
   return (
-    <div className="flex flex-col gap-4 font-mono select-none" aria-label="Atmospheric category readings">
+    <section className="flex flex-col gap-4 font-mono select-none" aria-label="Atmospheric category readings">
       {categories.map((cat) => {
         const val = breakdown[cat]
         const status = getCategoryStatus(cat, val)
@@ -80,7 +84,8 @@ export const AtmosphericReadings: React.FC<AtmosphericReadingsProps> = ({ breakd
           </div>
         )
       })}
-    </div>
+    </section>
   )
-}
+})
+AtmosphericReadings.displayName = 'AtmosphericReadings'
 export default AtmosphericReadings

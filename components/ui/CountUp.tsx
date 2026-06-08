@@ -11,7 +11,12 @@ interface CountUpProps {
   className?: string
 }
 
-export const CountUp: React.FC<CountUpProps> = ({
+/**
+ * Animated number counter that counts up from zero to a target value.
+ * Uses requestAnimationFrame with easing and properly cancels on unmount/update.
+ * Wrapped with React.memo to prevent unnecessary re-renders.
+ */
+export const CountUp: React.FC<CountUpProps> = React.memo(({
   end,
   duration = 1200,
   decimals = 1,
@@ -21,30 +26,36 @@ export const CountUp: React.FC<CountUpProps> = ({
 }) => {
   const [count, setCount] = useState(0)
   const countRef = useRef(0)
-  
+
   useEffect(() => {
+    let rafId: number
     let startTimestamp: number | null = null
     const startValue = 0
 
     const step = (timestamp: number) => {
       if (!startTimestamp) startTimestamp = timestamp
       const progress = Math.min((timestamp - startTimestamp) / duration, 1)
-      
+
       // Easing out quadratic: f(t) = t * (2 - t)
       const easeProgress = progress * (2 - progress)
       const currentValue = startValue + easeProgress * (end - startValue)
-      
+
       countRef.current = currentValue
       setCount(currentValue)
 
       if (progress < 1) {
-        window.requestAnimationFrame(step)
+        rafId = window.requestAnimationFrame(step)
       } else {
         setCount(end)
       }
     }
 
-    window.requestAnimationFrame(step)
+    rafId = window.requestAnimationFrame(step)
+
+    // Cancel animation on unmount or when end/duration changes
+    return () => {
+      cancelAnimationFrame(rafId)
+    }
   }, [end, duration])
 
   return (
@@ -54,5 +65,6 @@ export const CountUp: React.FC<CountUpProps> = ({
       {suffix}
     </span>
   )
-}
+})
+CountUp.displayName = 'CountUp'
 export default CountUp

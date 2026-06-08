@@ -23,6 +23,15 @@ jest.mock('@google/generative-ai', () => {
   }
 })
 
+const validCarbonData = {
+  total: 3.5,
+  transport: 0.7,
+  energy: 0.8,
+  diet: 1.5,
+  consumption: 0.5,
+  flights: 0.0,
+}
+
 describe('Oracle API Route tests', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -58,14 +67,7 @@ describe('Oracle API Route tests', () => {
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: longMessage }],
-        carbonData: {
-          total: 2.5,
-          transport: 0.5,
-          energy: 0.5,
-          diet: 1.0,
-          consumption: 0.5,
-          flights: 0.0,
-        },
+        carbonData: validCarbonData,
       }),
     })
 
@@ -154,5 +156,91 @@ describe('Oracle API Route tests', () => {
     expect(res.status).toBe(400)
     const json = await res.json()
     expect(json.error).toContain('Content-Type must be application/json')
+  })
+
+  // 5. Messages array exceeding max (20) -> 400
+  test('POST with more than 20 messages returns 400', async () => {
+    const tooManyMessages = Array.from({ length: 21 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `Message ${i}`,
+    }))
+    const req = new NextRequest('http://localhost:3000/api/oracle', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: tooManyMessages,
+        carbonData: validCarbonData,
+      }),
+    })
+
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toContain('Invalid request format')
+  })
+
+  // 6. Malformed JSON body -> error response (500 via outer catch)
+  test('POST with malformed JSON body returns error response', async () => {
+    const req = new NextRequest('http://localhost:3000/api/oracle', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: '{invalid json content',
+    })
+
+    const res = await POST(req)
+    // Malformed JSON throws in req.json(), caught by outer try/catch, returns 500
+    expect(res.status).toBe(500)
+    const json = await res.json()
+    expect(json.error).toBeDefined()
+  })
+
+  // 7. Gemini stream throws -> handled gracefully
+  test('POST handles Gemini API error gracefully', async () => {
+    ;(global as any).mockGenerateContentStream.mockRejectedValue(
+      new Error('Gemini API rate limit exceeded')
+    )
+
+    const req = new NextRequest('http://localhost:3000/api/oracle', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: 'Test prompt' }],
+        carbonData: validCarbonData,
+      }),
+    })
+
+    const res = await POST(req)
+    // Should either return 500 or a streaming error response (not throw uncaught)
+    expect([200, 500, 503]).toContain(res.status)
+  })
+
+  // 8. Invalid carbonData values (negative numbers) -> 400
+  test('POST with invalid negative carbonData values returns 400', async () => {
+    const req = new NextRequest('http://localhost:3000/api/oracle', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: 'Test' }],
+        carbonData: {
+          total: -1,
+          transport: -5,
+          energy: 0,
+          diet: 1,
+          consumption: 0,
+          flights: 0,
+        },
+      }),
+    })
+
+    const res = await POST(req)
+    expect(res.status).toBe(400)
   })
 })

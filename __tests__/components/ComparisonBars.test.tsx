@@ -17,7 +17,7 @@ describe('ComparisonBars Component tests', () => {
     render(<ComparisonBars total={5.2} accentColor="#FF2244" />)
     
     // Verifies accessibility labels are present in DOM
-    const chartContainer = screen.getByLabelText(/Carbon comparison chart/i)
+    const chartContainer = screen.getByLabelText(/Carbon footprint comparison chart/i)
     expect(chartContainer).toBeInTheDocument()
   })
 })
